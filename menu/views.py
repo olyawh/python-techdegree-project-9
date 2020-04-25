@@ -8,6 +8,7 @@ from .models import *
 from .forms import *
 
 def menu_list(request):
+    '''View that shows a list of all menus filtered by expiration date'''
     all_menus = Menu.objects.all().prefetch_related('items')
     menus = all_menus.order_by('expiration_date')
     print(menus)
@@ -19,7 +20,8 @@ def menu_list(request):
     return render(request, 'menu/list_all_current_menus.html', {'menus': menus})
 
 def menu_detail(request, pk):
-    menu = Menu.objects.get(pk=pk)
+    '''View that shows a menu's details'''
+    menu = get_object_or_404(Menu, pk=pk)
     return render(request, 'menu/menu_detail.html', {'menu': menu})
 
 def item_detail(request, pk):
