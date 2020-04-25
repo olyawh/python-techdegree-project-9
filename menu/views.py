@@ -25,10 +25,8 @@ def menu_detail(request, pk):
     return render(request, 'menu/menu_detail.html', {'menu': menu})
 
 def item_detail(request, pk):
-    try: 
-        item = Item.objects.get(pk=pk)
-    except ObjectDoesNotExist:
-        raise Http404
+    '''View that displays a menu's item details'''
+    item = get_object_or_404(Item, pk=pk)
     return render(request, 'menu/detail_item.html', {'item': item})
 
 def create_new_menu(request):
