@@ -1,7 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from datetime import datetime
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import messages
 from .models import *
 from .forms import *
@@ -11,19 +9,14 @@ def menu_list(request):
     '''View that shows a list of all menus filtered by expiration date'''
     all_menus = Menu.objects.all().prefetch_related('items')
     menus = all_menus.order_by('expiration_date')
-    print(menus)
-   # for menu in all_menus:
-    #    if menu.expiration_date >= timezone.now():
-     #       menus.append(menu)
-
-    #menus = sorted(menus, key=attrgetter('expiration_date'))
     return render(request, 'menu/list_all_current_menus.html', {'menus': menus})
 
 
 def menu_detail(request, pk):
     '''View that shows a menu's details'''
+    storage = messages.get_messages(request)
     menu = get_object_or_404(Menu, pk=pk)
-    return render(request, 'menu/menu_detail.html', {'menu': menu})
+    return render(request, 'menu/menu_detail.html', {'menu': menu, 'message': storage})
 
 
 def item_detail(request, pk):
@@ -42,7 +35,8 @@ def create_new_menu(request):
             menu = form.save(commit=False)
             menu.created_date = timezone.now()
             menu.save()
-            menu.save_m2m()
+            form.save_m2m()
+            messages.success(request, 'New menu has been saved')
             return redirect('menu_detail', pk=menu.pk)
     else:
         form = MenuForm()
@@ -50,15 +44,18 @@ def create_new_menu(request):
 
 
 def edit_menu(request, pk):
+    '''A view to edit an existing form'''
     menu = get_object_or_404(Menu, pk=pk)
-    items = Item.objects.all()
+    form = MenuForm(instance=menu)
     if request.method == "POST":
-        menu.season = request.POST.get('season', '')
-        menu.expiration_date = datetime.strptime(request.POST.get('expiration_date', ''), '%m/%d/%Y')
-        menu.items = request.POST.get('items', '')
-        menu.save()
+        form = MenuForm(request.POST, instance=menu)
 
-    return render(request, 'menu/change_menu.html', {
-        'menu': menu,
-        'items': items,
-        })
+        '''Checking if the form is valid'''
+        if form.is_valid():
+            menu = form.save(commit=False)
+            menu.created_date = timezone.now()
+            menu.save()
+            form.save_m2m()
+            messages.success(request, 'The form has been updated')
+            return redirect('menu_detail', pk=menu.pk) 
+    return render(request, 'menu/menu_edit.html', {'form': form})
